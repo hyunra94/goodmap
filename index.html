@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>우리의 여행 지도</title>
+
+<link rel="icon" href="https://hyunra94.github.io/assets/favicon.png" />
+<meta property="og:title" content="우리의 여행 지도" />
+<meta property="og:image" content="https://hyunra94.github.io/assets/og-default.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- YOUR_KAKAO_JS_KEY를 실제 JavaScript 키로 교체하세요 -->
+<script
+  src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_JS_KEY&libraries=services&autoload=false">
+</script>
+
+<style>
+  :root {
+    --bg: #f4f1ff;
+    --bg-soft: #fff9fd;
+    --panel: rgba(255, 255, 255, 0.78);
+    --panel-strong: rgba(255, 255, 255, 0.94);
+    --line: rgba(126, 111, 175, 0.12);
+    --text: #5e5877;
+    --text-soft: #9890ad;
+    --purple: #9489d9;
+    --purple-soft: #e8e4ff;
+    --pink: #f7a9c2;
+    --pink-soft: #ffe8f0;
+    --blue-soft: #e8f0ff;
+    --visited: #f29bb8;
+    --wishlist: #a89fe3;
+    --shadow: 0 18px 50px rgba(92, 78, 138, 0.13);
+    --shadow-soft: 0 8px 24px rgba(94, 88, 119, 0.09);
+    --radius-xl: 28px;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-family: "Noto Sans KR", sans-serif;
+    background:
+      radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.92) 0 7%, transparent 27%),
+      radial-gradient(circle at 88% 18%, rgba(232, 228, 255, 0.9) 0 8%, transparent 30%),
+      linear-gradient(135deg, #f2f0ff 0%, #fff8fd 52%, #eef2ff 100%);
+  }
+
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    border-radius: 50%;
+    filter: blur(4px);
+    opacity: 0.75;
+  }
+
+  body::before {
+    width: 320px;
+    height: 320px;
+    left: -100px;
+    bottom: -100px;
+    background: rgba(255, 221, 236, 0.7);
+  }
+
+  body::after {
+    width: 300px;
+    height: 300px;
+    right: -120px;
+    top: -100px;
+    background: rgba(211, 218, 255, 0.75);
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button {
+    border: 0;
+  }
+
+  #app {
+    width: min(1480px, calc(100vw - 32px));
+    height: min(920px, calc(100vh - 32px));
+    margin: 16px auto;
+    display: grid;
+    grid-template-columns: 238px minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.76);
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.42);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* 왼쪽 메뉴 */
+  .sidebar {
+    position: relative;
+    padding: 24px 18px;
+    overflow: hidden;
+    border-right: 1px solid rgba(143, 129, 191, 0.1);
+    background:
+      linear-gradient(180deg, rgba(244, 244, 255, 0.9), rgba(239, 238, 255, 0.7)),
+      repeating-radial-gradient(circle at 20% 10%, transparent 0 18px, rgba(255,255,255,.35) 19px 20px);
+  }
+
+  .sidebar::after {
+    content: "";
+    position: absolute;
+    inset: auto -45px -80px -45px;
+    height: 230px;
+    background:
+      radial-gradient(ellipse at 20% 60%, rgba(255,255,255,.85) 0 28%, transparent 29%),
+      radial-gradient(ellipse at 55% 58%, rgba(255,255,255,.8) 0 30%, transparent 31%),
+      radial-gradient(ellipse at 82% 70%, rgba(255,255,255,.75) 0 27%, transparent 28%);
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  .brand {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 4px 24px;
+  }
+
+  .brand-mark {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #ffffff, #ece8ff);
+    box-shadow: var(--shadow-soft);
+    font-size: 22px;
+  }
+
+  .brand-text strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-text span {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-soft);
+    font-size: 11px;
+  }
+
+  .nav-title {
+    position: relative;
+    z-index: 2;
+    margin: 12px 10px 8px;
+    color: #aaa3bd;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .nav {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    border-radius: 15px;
+    color: var(--text);
+    background: transparent;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.56);
+    transform: translateY(-1px);
+  }
+
+  .nav-btn.active {
+    background: linear-gradient(135deg, rgba(205, 216, 255, 0.9), rgba(226, 222, 255, 0.9));
+    box-shadow: 0 8px 18px rgba(126, 111, 175, 0.13);
+  }
+
+  .nav-icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
+  }
+
+  .nav-btn span:last-child {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .sidebar-card {
+    position: absolute;
+    z-index: 2;
+    left: 18px;
+    right: 18px;
+    bottom: 22px;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,.82);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+  }
+
+  .sidebar-card .eyebrow {
+    color: var(--text-soft);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .sidebar-card strong {
+    display: block;
+    margin-top: 4px;
+    font-family: "Gowun Dodum", sans-serif;
+    font-size: 15px;
+  }
+
+  .sidebar-card p {
+    margin: 8px 0 0;
+    color: var(--text-soft);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  /* 본문 */
+  .main {
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.32);
+  }
+
+  .topbar {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .mobile-brand {
+    display: none;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 560px;
+  }
+
+  .search-icon {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    color: #a7a0b8;
+    font-size: 15px;
+    pointer-events: none;
+  }
+
+  #search-input {
+    width: 100%;
+    height: 46px;
+    padding: 0 18px 0 44px;
+    border: 1px solid rgba(142, 131, 180, 0.09);
+    outline: none;
+    border-radius: 16px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 7px 18px rgba(94, 88, 119, 0.06);
+    transition: 0.2s ease;
+  }
+
+  #search-input::placeholder {
+    color: #b5aec4;
+  }
+
+  #search-input:focus {
+    border-color: rgba(148, 137, 217, 0.35);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 0 0 4px rgba(148, 137, 217, 0.1);
+  }
+
+  .top-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .circle-btn {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 7px 18px rgba(94, 88, 119, 0.06);
+    cursor: pointer;
+  }
+
+  .profile {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 3px solid rgba(255,255,255,.9);
+    border-radius: 50%;
+    background: linear-gradient(145deg, #c9c3ff, #ffcfdf);
+    box-shadow: var(--shadow-soft);
+    font-size: 18px;
+  }
+
+  .hero {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 4px 4px 0;
+  }
+
+  .hero-copy .hello {
+    margin: 0;
+    font-family: "Gowun Dodum", sans-serif;
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+  }
+
+  .hero-copy .hello span {
+    color: var(--pink);
+  }
+
+  .hero-copy p {
+    margin: 7px 0 0;
+    color: var(--text-soft);
+    font-size: 13px;
+  }
+
+  .summary {
+    display: flex;
+    gap: 10px;
+  }
+
+  .summary-card {
+    min-width: 130px;
+    padding: 12px 15px;
+    border: 1px solid rgba(255,255,255,.84);
+    border-radius: 17px;
+    background: rgba(255, 255, 255, 0.66);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(12px);
+  }
+
+  .summary-card .label {
+    color: var(--text-soft);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .summary-card .value {
+    margin-top: 3px;
+    font-size: 21px;
+    font-weight: 800;
+  }
+
+  .summary-card.visited .value {
+    color: var(--visited);
+  }
+
+  .summary-card.wishlist .value {
+    color: var(--wishlist);
+  }
+
+  /* 지도 카드 */
+  .map-card {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    border: 8px solid rgba(255, 255, 255, 0.72);
+    border-radius: var(--radius-xl);
+    background: rgba(255,255,255,.76);
+    box-shadow: var(--shadow);
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+  }
+
+  .map-toolbar {
+    position: absolute;
+    z-index: 8;
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .mobile-filters,
+  .map-badge {
+    pointer-events: auto;
+  }
+
+  .mobile-filters {
+    display: none;
+    gap: 7px;
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,.9);
+    border-radius: 16px;
+    background: rgba(255,255,255,.78);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+  }
+
+  .filter-chip {
+    padding: 8px 12px;
+    border-radius: 11px;
+    color: var(--text-soft);
+    background: transparent;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .filter-chip.active {
+    color: #fff;
+    background: linear-gradient(135deg, #a69be2, #8f83d7);
+    box-shadow: 0 6px 14px rgba(148, 137, 217, 0.28);
+  }
+
+  .map-badge {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 13px;
+    border: 1px solid rgba(255,255,255,.9);
+    border-radius: 14px;
+    color: var(--text);
+    background: rgba(255,255,255,.8);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #89d3b0;
+    box-shadow: 0 0 0 4px rgba(137, 211, 176, 0.18);
+  }
+
+  #loading {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--text-soft);
+    background:
+      linear-gradient(145deg, rgba(247, 244, 255, .96), rgba(255, 248, 252, .96));
+    font-size: 13px;
+  }
+
+  .loading-box {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+  }
+
+  .spinner {
+    width: 34px;
+    height: 34px;
+    border: 3px solid rgba(148, 137, 217, 0.18);
+    border-top-color: var(--purple);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .legend {
+    position: absolute;
+    z-index: 8;
+    left: 18px;
+    bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 13px;
+    border: 1px solid rgba(255,255,255,.88);
+    border-radius: 15px;
+    background: rgba(255,255,255,.82);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(14px);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .legend-dot.visited { background: var(--visited); }
+  .legend-dot.wishlist { background: var(--wishlist); }
+
+  /* 카카오 인포윈도우 */
+  .info-card {
+    width: 230px;
+    padding: 15px 16px 14px;
+    border-radius: 18px;
+    color: var(--text);
+    background: #fff;
+    font-family: "Noto Sans KR", sans-serif;
+  }
+
+  .info-card .status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+    color: #fff;
+    background: var(--purple);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .info-card .status.visited {
+    background: var(--visited);
+  }
+
+  .info-card .name {
+    margin-bottom: 5px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .info-card .meta {
+    color: var(--text-soft);
+    font-size: 11px;
+  }
+
+  .info-card .memo {
+    margin-top: 9px;
+    padding: 8px 9px;
+    border-radius: 10px;
+    color: var(--text);
+    background: var(--bg-soft);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .info-card .tags {
+    margin-top: 9px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .info-card .tag {
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: #756e91;
+    background: var(--purple-soft);
+    font-size: 10px;
+  }
+
+  .info-card .photos {
+    margin-top: 9px;
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .info-card .photos img {
+    width: 62px;
+    height: 62px;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .info-card .photos.loading {
+    color: var(--text-soft);
+    font-size: 10px;
+  }
+
+  /* 카카오 기본 인포윈도우 테두리 완화 */
+  .wrap {
+    border-radius: 18px;
+  }
+
+  @media (max-width: 920px) {
+    body {
+      overflow: auto;
+    }
+
+    #app {
+      width: 100%;
+      height: 100dvh;
+      margin: 0;
+      grid-template-columns: 1fr;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .sidebar {
+      display: none;
+    }
+
+    .main {
+      height: 100dvh;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .mobile-brand {
+      display: block;
+      white-space: nowrap;
+    }
+
+    .search-wrap {
+      max-width: none;
+    }
+
+    .top-actions .circle-btn {
+      display: none;
+    }
+
+    .hero {
+      align-items: center;
+    }
+
+    .summary-card {
+      min-width: 108px;
+      padding: 10px 12px;
+    }
+
+    .summary-card .value {
+      font-size: 18px;
+    }
+
+    .mobile-filters {
+      display: flex;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .main {
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .topbar {
+      gap: 8px;
+    }
+
+    .mobile-brand {
+      width: 42px;
+      overflow: hidden;
+      font-size: 0;
+    }
+
+    .mobile-brand::before {
+      content: "🌸";
+      font-size: 22px;
+    }
+
+    .profile {
+      width: 40px;
+      height: 40px;
+    }
+
+    #search-input {
+      height: 42px;
+      font-size: 13px;
+    }
+
+    .hero {
+      align-items: flex-start;
+    }
+
+    .hero-copy .hello {
+      font-size: 23px;
+    }
+
+    .hero-copy p {
+      max-width: 190px;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .summary {
+      gap: 7px;
+    }
+
+    .summary-card {
+      min-width: 78px;
+      padding: 9px 10px;
+    }
+
+    .summary-card .label {
+      font-size: 9px;
+    }
+
+    .summary-card .value {
+      font-size: 17px;
+    }
+
+    .map-card {
+      border-width: 5px;
+      border-radius: 22px;
+    }
+
+    #map {
+      min-height: 360px;
+    }
+
+    .map-toolbar {
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      align-items: flex-start;
+    }
+
+    .mobile-filters {
+      max-width: calc(100% - 54px);
+      overflow-x: auto;
+      padding: 4px;
+      border-radius: 13px;
+      scrollbar-width: none;
+    }
+
+    .mobile-filters::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-chip {
+      padding: 7px 9px;
+      white-space: nowrap;
+      font-size: 10px;
+    }
+
+    .map-badge {
+      padding: 9px 10px;
+      font-size: 0;
+    }
+
+    .legend {
+      left: 10px;
+      bottom: 10px;
+      padding: 8px 10px;
+      gap: 9px;
+      font-size: 10px;
+    }
+  }
+</style>
+</head>
+
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🌸</div>
+      <div class="brand-text">
+        <strong>Our Travel</strong>
+        <span>우리의 여행 기록</span>
+      </div>
+    </div>
+
+    <div class="nav-title">Travel Map</div>
+    <nav class="nav">
+      <button class="nav-btn active" data-filter="all">
+        <span class="nav-icon">🗺️</span>
+        <span>전체 장소</span>
+      </button>
+      <button class="nav-btn" data-filter="visited">
+        <span class="nav-icon">💗</span>
+        <span>방문한 곳</span>
+      </button>
+      <button class="nav-btn" data-filter="wishlist">
+        <span class="nav-icon">✨</span>
+        <span>가고 싶은 곳</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-card">
+      <div class="eyebrow">TRAVEL NOTE</div>
+      <strong>우리의 다음 여행은 어디일까?</strong>
+      <p>가보고 싶은 장소와 함께한 추억을 지도 위에 차곡차곡 모아보세요.</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="mobile-brand">우리의 여행 지도</div>
+
+      <label class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input
+          id="search-input"
+          type="search"
+          placeholder="장소명, 메모, 태그 검색..."
+          autocomplete="off"
+        />
+      </label>
+
+      <div class="top-actions">
+        <button class="circle-btn" type="button" title="전체 지도 보기" id="fit-map-btn">⌖</button>
+        <div class="profile" aria-label="프로필">👩🏻</div>
+      </div>
+    </div>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <h1 class="hello">Good day <span>✿</span></h1>
+        <p>함께한 장소와 앞으로 가고 싶은 곳을 한눈에 모아봤어요.</p>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card visited">
+          <div class="label">방문한 곳</div>
+          <div class="value" id="visited-count">0</div>
+        </div>
+        <div class="summary-card wishlist">
+          <div class="label">가고 싶은 곳</div>
+          <div class="value" id="wishlist-count">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="map-card">
+      <div id="map"></div>
+
+      <div class="map-toolbar">
+        <div class="mobile-filters">
+          <button class="filter-chip active" data-filter="all">전체</button>
+          <button class="filter-chip" data-filter="visited">방문함</button>
+          <button class="filter-chip" data-filter="wishlist">가고 싶음</button>
+        </div>
+
+        <div class="map-badge">
+          <span class="status-dot"></span>
+          <span id="visible-count">0개 장소 표시 중</span>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item">
+          <span class="legend-dot visited"></span>
+          방문함
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot wishlist"></span>
+          가고 싶음
+        </span>
+      </div>
+
+      <div id="loading">
+        <div class="loading-box">
+          <div class="spinner"></div>
+          <span>여행 지도를 불러오는 중...</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Cloudflare Worker 배포 주소로 교체하세요
+  const API_BASE = "https://travel-map-worker.YOUR_SUBDOMAIN.workers.dev";
+
+  let map;
+  let markers = [];
+  let allPins = [];
+  let currentFilter = "all";
+  let searchKeyword = "";
+  let activeInfoWindow = null;
+
+  function initMap() {
+    const container = document.getElementById("map");
+
+    map = new kakao.maps.Map(container, {
+      center: new kakao.maps.LatLng(36.5, 127.8),
+      level: 12,
+    });
+
+    loadPins();
+  }
+
+  async function loadPins() {
+    const loading = document.getElementById("loading");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/pins`);
+
+      if (!res.ok) {
+        throw new Error(`API 오류: ${res.status}`);
+      }
+
+      const data = await res.json();
+      allPins = Array.isArray(data.pins) ? data.pins : [];
+
+      updateSummary();
+      renderMarkers();
+      loading.style.display = "none";
+    } catch (error) {
+      console.error(error);
+      loading.innerHTML = `
+        <div class="loading-box">
+          <span style="font-size:30px">☁️</span>
+          <strong style="color:#6f6787">지도 데이터를 불러오지 못했어요.</strong>
+          <span>Worker 주소와 CORS 설정을 확인해주세요.</span>
+        </div>
+      `;
+    }
+  }
+
+  function updateSummary() {
+    const visitedCount = allPins.filter((pin) => Boolean(pin.visited)).length;
+    const wishlistCount = allPins.filter((pin) => Boolean(pin.wishlist)).length;
+
+    document.getElementById("visited-count").textContent = visitedCount;
+    document.getElementById("wishlist-count").textContent = wishlistCount;
+  }
+
+  function clearMarkers() {
+    markers.forEach(({ marker, infowindow }) => {
+      marker.setMap(null);
+      infowindow.close();
+    });
+
+    markers = [];
+    activeInfoWindow = null;
+  }
+
+  function pinMatchesFilter(pin) {
+    if (currentFilter === "visited") return Boolean(pin.visited);
+    if (currentFilter === "wishlist") return Boolean(pin.wishlist);
+    return true;
+  }
+
+  function pinMatchesSearch(pin) {
+    if (!searchKeyword) return true;
+
+    const searchableText = [
+      pin.name,
+      pin.memo,
+      ...(Array.isArray(pin.tags) ? pin.tags : []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(searchKeyword);
+  }
+
+  function getFilteredPins() {
+    return allPins.filter((pin) => pinMatchesFilter(pin) && pinMatchesSearch(pin));
+  }
+
+  // 사진은 Notion 페이지 본문에서 실시간 조회 (URL이 오래 캐싱 안 되므로 인포윈도우를
+  // 열 때마다 매번 새로 불러온다). pageId별로 같은 세션 안에서는 결과를 메모리에 캐싱.
+  const photoCache = new Map();
+
+  async function fetchPhotos(pageId) {
+    if (photoCache.has(pageId)) return photoCache.get(pageId);
+    try {
+      const res = await fetch(`${API_BASE}/api/photo?id=${encodeURIComponent(pageId)}`);
+      const data = await res.json();
+      const photos = Array.isArray(data.photos) ? data.photos : [];
+      photoCache.set(pageId, photos);
+      return photos;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function renderMarkers() {
+    if (!map) return;
+
+    clearMarkers();
+
+    const filteredPins = getFilteredPins();
+    const bounds = new kakao.maps.LatLngBounds();
+
+    filteredPins.forEach((pin) => {
+      const lat = Number(pin.lat);
+      const lng = Number(pin.lng);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+      const position = new kakao.maps.LatLng(lat, lng);
+      const marker = new kakao.maps.Marker({
+        position,
+        map,
+        image: markerImage(Boolean(pin.wishlist)),
+      });
+
+      const ratingText =
+        pin.visited && Number(pin.rating) > 0
+          ? `⭐ ${Number(pin.rating).toFixed(1)}`
+          : pin.visited
+          ? "방문한 곳"
+          : "가고 싶은 곳";
+
+      const baseInfoContent = `
+        <div class="info-card">
+          <div class="status ${pin.visited ? "visited" : ""}">
+            ${pin.visited ? "방문 완료" : "위시리스트"}
+          </div>
+          <div class="name">${escapeHtml(pin.name || "이름 없는 장소")}</div>
+          <div class="meta">${escapeHtml(ratingText)}</div>
+          ${
+            pin.memo
+              ? `<div class="memo">${escapeHtml(pin.memo)}</div>`
+              : ""
+          }
+          ${
+            Array.isArray(pin.tags) && pin.tags.length
+              ? `
+                <div class="tags">
+                  ${pin.tags
+                    .map((tag) => `<span class="tag">#${escapeHtml(tag)}</span>`)
+                    .join("")}
+                </div>
+              `
+              : ""
+          }
+          <div class="photos loading" data-photo-slot="${pin.id}"></div>
+        </div>
+      `;
+
+      const infowindow = new kakao.maps.InfoWindow({
+        content: baseInfoContent,
+        removable: true,
+      });
+
+      kakao.maps.event.addListener(marker, "click", async () => {
+        if (activeInfoWindow) activeInfoWindow.close();
+        infowindow.open(map, marker);
+        activeInfoWindow = infowindow;
+
+        const photos = await fetchPhotos(pin.id);
+        if (!photos.length) {
+          // 사진 없으면 로딩 표시만 조용히 지움
+          infowindow.setContent(
+            baseInfoContent.replace(
+              `<div class="photos loading" data-photo-slot="${pin.id}"></div>`,
+              ""
+            )
+          );
+          return;
+        }
+        const photoHtml = `<div class="photos">${photos
+          .map((url) => `<img src="${url}" alt="" loading="lazy" />`)
+          .join("")}</div>`;
+        infowindow.setContent(
+          baseInfoContent.replace(
+            `<div class="photos loading" data-photo-slot="${pin.id}"></div>`,
+            photoHtml
+          )
+        );
+      });
+
+      markers.push({ marker, infowindow, position });
+      bounds.extend(position);
+    });
+
+    document.getElementById("visible-count").textContent =
+      `${markers.length}개 장소 표시 중`;
+
+    if (markers.length > 0) {
+      map.setBounds(bounds);
+
+      // 마커 1개일 때 너무 확대되는 것을 방지
+      if (markers.length === 1) {
+        map.setLevel(5);
+      }
+    }
+  }
+
+  function markerImage(isWishlist) {
+    const color = isWishlist ? "A89FE3" : "F29BB8";
+
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="48" viewBox="0 0 38 48">
+        <defs>
+          <filter id="shadow" x="-40%" y="-30%" width="180%" height="190%">
+            <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#6C5E8A" flood-opacity=".22"/>
+          </filter>
+        </defs>
+        <path
+          filter="url(#shadow)"
+          d="M19 2C9.6 2 2 9.4 2 18.6 2 30.3 19 46 19 46s17-15.7 17-27.4C36 9.4 28.4 2 19 2z"
+          fill="#${color}"
+        />
+        <circle cx="19" cy="18" r="7" fill="white" fill-opacity=".95"/>
+        <circle cx="19" cy="18" r="3" fill="#${color}"/>
+      </svg>
+    `;
+
+    const encodedSvg = encodeURIComponent(svg)
+      .replace(/'/g, "%27")
+      .replace(/"/g, "%22");
+
+    return new kakao.maps.MarkerImage(
+      `data:image/svg+xml;charset=UTF-8,${encodedSvg}`,
+      new kakao.maps.Size(38, 48),
+      { offset: new kakao.maps.Point(19, 48) }
+    );
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function setFilter(filter) {
+    currentFilter = filter;
+
+    document
+      .querySelectorAll("[data-filter]")
+      .forEach((button) => {
+        button.classList.toggle("active", button.dataset.filter === filter);
+      });
+
+    renderMarkers();
+  }
+
+  document.querySelectorAll("[data-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setFilter(button.dataset.filter);
+    });
+  });
+
+  document
+    .getElementById("search-input")
+    .addEventListener("input", (event) => {
+      searchKeyword = event.target.value.trim().toLowerCase();
+      renderMarkers();
+    });
+
+  document
+    .getElementById("fit-map-btn")
+    .addEventListener("click", () => {
+      renderMarkers();
+    });
+
+  window.addEventListener("load", () => {
+    const loading = document.getElementById("loading");
+
+    if (!window.kakao || !window.kakao.maps) {
+      loading.innerHTML = `
+        <div class="loading-box">
+          <span style="font-size:30px">🔑</span>
+          <strong style="color:#6f6787">카카오맵 SDK를 불러오지 못했어요.</strong>
+          <span>JavaScript 키와 등록 도메인을 확인해주세요.</span>
+        </div>
+      `;
+      return;
+    }
+
+    kakao.maps.load(initMap);
+  });
+</script>
+</body>
+</html>
