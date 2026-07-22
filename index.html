@@ -565,6 +565,124 @@
   .legend-dot.visited { background: var(--visited); }
   .legend-dot.wishlist { background: var(--wishlist); }
 
+  /* 목록 패널 */
+  .list-panel {
+    position: absolute;
+    z-index: 9;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 82%;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,.8);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: -12px 0 30px rgba(92, 78, 138, 0.1);
+    backdrop-filter: blur(16px);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+
+  .list-panel.open {
+    transform: translateX(0);
+  }
+
+  .list-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid rgba(143, 129, 191, 0.1);
+  }
+
+  .list-panel-header strong {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .list-close-btn {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: var(--text-soft);
+    background: rgba(0,0,0,0.04);
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .list-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px 16px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 11px;
+    border: 1px solid rgba(143, 129, 191, 0.1);
+    border-radius: 14px;
+    background: rgba(255,255,255,.8);
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+
+  .list-item:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .list-item .dot {
+    margin-top: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  .list-item .dot.visited { background: var(--visited); }
+  .list-item .dot.wishlist { background: var(--wishlist); }
+
+  .list-item .body {
+    min-width: 0;
+  }
+
+  .list-item .name {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .list-item .meta {
+    margin-top: 2px;
+    color: var(--text-soft);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .list-empty {
+    padding: 30px 16px;
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 12px;
+  }
+
+  .list-toggle-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, #a69be2, #8f83d7);
+  }
+
   /* 카카오 인포윈도우 */
   .info-card {
     width: 230px;
@@ -822,6 +940,12 @@
       scrollbar-width: none;
     }
 
+    .list-panel {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 22px;
+    }
+
     .mobile-filters::-webkit-scrollbar {
       display: none;
     }
@@ -897,6 +1021,11 @@
       </label>
 
       <div class="top-actions">
+        <button class="circle-btn list-toggle-btn" type="button" title="목록 보기" id="list-toggle-btn">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 5H15M3 9H15M3 13H15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
         <button class="circle-btn" type="button" title="전체 지도 보기" id="fit-map-btn">⌖</button>
         <div class="profile" aria-label="프로필">👩🏻</div>
       </div>
@@ -952,6 +1081,14 @@
           <div class="spinner"></div>
           <span>여행 지도를 불러오는 중...</span>
         </div>
+      </div>
+
+      <div class="list-panel" id="list-panel">
+        <div class="list-panel-header">
+          <strong>장소 목록</strong>
+          <div class="list-close-btn" id="list-close-btn">✕</div>
+        </div>
+        <div class="list-items" id="list-items"></div>
       </div>
     </section>
   </main>
@@ -1164,7 +1301,7 @@
         );
       });
 
-      markers.push({ marker, infowindow, position });
+      markers.push({ marker, infowindow, position, id: pin.id });
       bounds.extend(position);
     });
 
@@ -1179,6 +1316,50 @@
         map.setLevel(5);
       }
     }
+
+    renderList(filteredPins);
+  }
+
+  function renderList(filteredPins) {
+    const container = document.getElementById("list-items");
+    if (!filteredPins.length) {
+      container.innerHTML = `<div class="list-empty">표시할 장소가 없어요</div>`;
+      return;
+    }
+
+    container.innerHTML = filteredPins
+      .map((pin) => {
+        const metaText = pin.address || (pin.visited ? "방문한 곳" : "가고 싶은 곳");
+        return `
+          <div class="list-item" data-pin-id="${pin.id}">
+            <span class="dot ${pin.wishlist ? "wishlist" : "visited"}"></span>
+            <div class="body">
+              <div class="name">${escapeHtml(pin.name || "이름 없는 장소")}</div>
+              <div class="meta">${escapeHtml(metaText)}</div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    container.querySelectorAll(".list-item").forEach((el) => {
+      el.addEventListener("click", () => focusPin(el.dataset.pinId));
+    });
+  }
+
+  function focusPin(pinId) {
+    const entry = markers.find((m) => m.id === pinId);
+    if (!entry || !map) return;
+    map.panTo(entry.position);
+    kakao.maps.event.trigger(entry.marker, "click");
+  }
+
+  function toggleListPanel(forceOpen) {
+    const panel = document.getElementById("list-panel");
+    const btn = document.getElementById("list-toggle-btn");
+    const shouldOpen = forceOpen != null ? forceOpen : !panel.classList.contains("open");
+    panel.classList.toggle("open", shouldOpen);
+    btn.classList.toggle("active", shouldOpen);
   }
 
   function markerImage(isWishlist) {
@@ -1251,6 +1432,14 @@
     .addEventListener("click", () => {
       renderMarkers();
     });
+
+  document
+    .getElementById("list-toggle-btn")
+    .addEventListener("click", () => toggleListPanel());
+
+  document
+    .getElementById("list-close-btn")
+    .addEventListener("click", () => toggleListPanel(false));
 
   window.addEventListener("load", () => {
     const loading = document.getElementById("loading");
