@@ -775,24 +775,31 @@
   }
 
   .info-card .links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     flex: 1;
-    text-align: center;
-    padding: 7px 0;
+    height: 32px;
     border-radius: 10px;
-    font-size: 10px;
-    font-weight: 700;
     text-decoration: none;
-    color: var(--text);
-    background: var(--purple-soft);
     transition: 0.15s ease;
   }
 
+  .info-card .links a.notion {
+    background: #191919;
+  }
+
   .info-card .links a.kakao {
-    background: var(--pink-soft);
+    background: #FEE500;
+  }
+
+  .info-card .links a svg {
+    display: block;
   }
 
   .info-card .links a:hover {
-    filter: brightness(0.97);
+    filter: brightness(1.06);
   }
 
   /* 카카오 기본 인포윈도우 테두리 완화 */
@@ -1086,7 +1093,11 @@
       <div class="list-panel" id="list-panel">
         <div class="list-panel-header">
           <strong>장소 목록</strong>
-          <div class="list-close-btn" id="list-close-btn">✕</div>
+          <div class="list-close-btn" id="list-close-btn">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M2.5 2.5L10.5 10.5M10.5 2.5L2.5 10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
         </div>
         <div class="list-items" id="list-items"></div>
       </div>
@@ -1259,12 +1270,25 @@
           <div class="links">
             ${
               pin.url
-                ? `<a href="${pin.url}" target="_blank" rel="noopener">📝 노션에서 보기</a>`
+                ? `<a class="notion" href="${pin.url}" target="_blank" rel="noopener" title="노션에서 보기">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                      <rect width="15" height="15" rx="3" fill="#191919"/>
+                      <path d="M4.2 4.1v6.8h1.3V6.3l3.1 4.6h1.3V4.1H8.6v4.6L5.5 4.1H4.2z" fill="#fff"/>
+                    </svg>
+                  </a>`
                 : ""
             }
             <a class="kakao" href="https://map.kakao.com/link/search/${encodeURIComponent(
               [pin.name, pin.address].filter(Boolean).join(" ")
-            )}" target="_blank" rel="noopener">📍 카카오맵 정보</a>
+            )}" target="_blank" rel="noopener" title="카카오맵에서 정보 보기">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <ellipse cx="8" cy="7.3" rx="6.5" ry="5.3" fill="#3C1E1E"/>
+                <path d="M5.2 10.5L3.6 13l2.9-1.3c.5.1 1 .2 1.5.2" stroke="#3C1E1E" stroke-width="0" fill="#3C1E1E"/>
+                <circle cx="5.3" cy="7.3" r="1" fill="#FEE500"/>
+                <circle cx="8" cy="7.3" r="1" fill="#FEE500"/>
+                <circle cx="10.7" cy="7.3" r="1" fill="#FEE500"/>
+              </svg>
+            </a>
           </div>
         </div>
       `;
